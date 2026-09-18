@@ -244,6 +244,10 @@ a:hover{text-decoration-color:var(--ink)}
 /* User guide: a real, visibly clickable control beside the theme switch */
 .guidelink{border:1px solid var(--line-strong);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;white-space:nowrap;margin-left:4px}
 .guidelink:hover{background:var(--surface);border-color:var(--ink)}
+/* Theme switch: icon segments — monitor = follow the computer, sun = light, moon = dark */
+.theme button{padding:5px 9px;display:inline-flex;align-items:center}
+.theme svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+.theme button[data-theme-set="dark"] svg{fill:currentColor;stroke:none}
 </style>
 </head>
 <body>
@@ -261,7 +265,7 @@ a:hover{text-decoration-color:var(--ink)}
       <span class="led" id="ledBusy"><i></i>Write</span>
       <a class="guidelink" href="guide.html">User guide</a>
       <span class="theme" role="group" aria-label="Colour theme">
-        <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button><button type="button" data-theme-set="light" aria-pressed="false">Light</button><button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+        <button type="button" data-theme-set="auto" aria-pressed="true" title="Match my computer's setting" aria-label="Theme: match my computer's setting"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.8" y="4.4" width="18.4" height="12.4" rx="2"/><path d="M8.8 20.4h6.4M12 16.8v3.6"/></svg></button><button type="button" data-theme-set="light" aria-pressed="false" title="Light" aria-label="Theme: light"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6L17 17M7 7L5.4 5.4"/></svg></button><button type="button" data-theme-set="dark" aria-pressed="false" title="Dark" aria-label="Theme: dark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z"/></svg></button>
       </span>
     </div>
   </header>
