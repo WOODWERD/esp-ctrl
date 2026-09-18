@@ -14,4 +14,6 @@ First public release.
 - Automatic flash baud from the USB bridge chip, with step-down, retry and per-bridge memory.
 - Plain-language error states for port in use, chip not responding, unplugged, interrupted or failed
   writes, failed verify, oversized images and unsupported browsers.
-- Auto / Light / Dark theme. User guide. Fully offline-capable: no network requests.
+- Three colour themes chosen by icon: follow the computer (default), light, dark. The choice is remembered.
+- A visible User guide link in the top bar, next to the theme switch.
+- Fully offline-capable: no network requests, no analytics.
