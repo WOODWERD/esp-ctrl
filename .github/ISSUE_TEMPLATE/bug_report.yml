@@ -1,0 +1,26 @@
+name: Something did not work
+description: A board that would not connect, a failed write, a wrong status, or anything confusing.
+labels: [bug]
+body:
+  - type: input
+    id: board
+    attributes: { label: Board, description: "Name or link, e.g. ESP32-2432S028R (Cheap Yellow Display), ESP32-S3 DevKitC", placeholder: "ESP32-2432S028R" }
+    validations: { required: true }
+  - type: input
+    id: bridge
+    attributes: { label: USB bridge, description: "Copy the Device and Bridge lines from the Port panel", placeholder: "USB 1A86:7523 · WCH CH340" }
+    validations: { required: true }
+  - type: input
+    id: browser
+    attributes: { label: Browser and operating system, placeholder: "Chrome 140 on macOS 15" }
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes: { label: ESP Ctrl version, description: "Shown next to the name at the top of the page", placeholder: "v0.9.0" }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: "What you did, what you expected, what you saw instead." }
+    validations: { required: true }
+  - type: textarea
+    id: log
+    attributes: { label: Monitor log, description: "Paste the text from the log area. It records the raw flashing errors.", render: text }

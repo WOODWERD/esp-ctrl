@@ -1,0 +1,14 @@
+{
+  "name": "esp-ctrl-vendor",
+  "private": true,
+  "scripts": {
+    "vendor": "esbuild entry.js --bundle --format=esm --minify --target=es2020 --outfile=../site/vendor/esptool.js"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "esbuild": "^0.28.2",
+    "esptool-js": "^0.6.1",
+    "spark-md5": "^3.0.2"
+  }
+}

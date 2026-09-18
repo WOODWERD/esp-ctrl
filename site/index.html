@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESP Ctrl</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231a1c1e'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%232fe38f'/%3E%3C/svg%3E">
+<meta property="og:title" content="ESP Ctrl">
+<meta property="og:description" content="Flash and monitor ESP32-family boards from the browser.">
+<meta name="description" content="Flash and monitor ESP32-family boards from the browser. Built on esptool-js by WOODWERD.">
+<script>
+/* Apply the saved theme before first paint. No value = follow the system setting. */
+try{var t=localStorage.getItem("espctrl.theme")||localStorage.getItem("flashctrl.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}
+</script>
+<style>
+@font-face{font-family:"Inter";font-weight:400;font-style:normal;font-display:swap;src:url("fonts/inter-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Inter";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/inter-latin-500-normal.woff2") format("woff2")}
+@font-face{font-family:"Inter";font-weight:600;font-style:normal;font-display:swap;src:url("fonts/inter-latin-600-normal.woff2") format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:swap;src:url("fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2")}
+body{margin:0}[hidden]{display:none!important}
+
+/* Quiet version: paper ground, hairlines, one accent, a bright green, reserved for the core: flash map and progress. */
+:root{
+  --ground:#f6f6f3; --surface:#ffffff; --line:#e2e2dc; --line-strong:#c9c9c2;
+  --ink:#1a1c1e; --soft:#6a6f74; --faint:#9a9ea2;
+  --accent:#2fe38f; --accent-tint:#d5f8e6;
+  --ok:#2f9e5f; --fault:#d0453a; --busy:#d99a1c; --off:#c9c9c2;
+  --c-sys:#2f6db3; --c-rom:#8a8f94; --c-good:#23824c; --c-bad:#c23b31;
+  --primary:#1a1c1e; --primary-ink:#ffffff; --focus:#2f6db3;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#131415; --surface:#1a1b1d; --line:#2a2c2f; --line-strong:#3a3d41;
+    --ink:#ececea; --soft:#9da2a7; --faint:#6d7277;
+    --accent-tint:#123a27; --off:#3a3d41;
+    --c-sys:#7fb2ea; --c-rom:#7d8388; --c-good:#5fcb8c; --c-bad:#f0776c;
+    --primary:#ececea; --primary-ink:#131415; --focus:#7fb2ea;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#131415; --surface:#1a1b1d; --line:#2a2c2f; --line-strong:#3a3d41;
+  --ink:#ececea; --soft:#9da2a7; --faint:#6d7277;
+  --accent-tint:#123a27; --off:#3a3d41;
+  --c-sys:#7fb2ea; --c-rom:#7d8388; --c-good:#5fcb8c; --c-bad:#f0776c;
+  --primary:#ececea; --primary-ink:#131415; --focus:#7fb2ea;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:Inter,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.5;padding-inline:24px;padding-block:32px 48px;-webkit-font-smoothing:antialiased}
+.mono,.well,input.off,select,.seg-size,.seg-file{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.bench{max-width:1080px;margin-inline:auto;display:flex;flex-direction:column;gap:40px}
+
+.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px 24px}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.015em;line-height:1.2}
+.brand h1::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--accent);margin-right:10px;vertical-align:.12em}
+.brand .by,.mocktag{font-size:13px;color:var(--soft)}
+.mocktag::before{content:"· ";color:var(--faint)}
+.leds{display:flex;gap:20px;align-items:center}
+.led{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--soft)}
+.led i{width:7px;height:7px;border-radius:50%;background:var(--off)}
+.led.on-ok{color:var(--ink)} .led.on-ok i{background:var(--ok)}
+.led.on-busy{color:var(--ink)} .led.on-busy i{background:var(--busy)}
+.led.on-fault{color:var(--ink)} .led.on-fault i{background:var(--fault)}
+@media (prefers-reduced-motion:no-preference){.led.blink i{animation:bl 1s ease-in-out infinite}}
+@keyframes bl{50%{opacity:.3}}
+
+.grid{display:grid;grid-template-columns:minmax(260px,300px) 1fr;gap:40px 64px;align-items:start}
+.col{display:flex;flex-direction:column;gap:40px;min-width:0}
+.module{display:flex;flex-direction:column;gap:16px;min-width:0}
+.module>h2{margin:0;padding-bottom:10px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.field{display:flex;flex-direction:column;gap:6px;flex:1 1 120px;min-width:0}
+.module>.field{flex:0 0 auto}
+.field>span{font-size:12px;color:var(--soft)}
+select,input.off,input.send{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;width:100%;min-width:0}
+select:hover,input.off:hover,input.send:hover{border-color:var(--line-strong)}
+input.send{font-family:"JetBrains Mono",ui-monospace,monospace}
+button{font:inherit;cursor:pointer}
+.key{background:transparent;color:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:500;transition:background .15s}
+.key:hover:not(:disabled){background:var(--surface)}
+.key:disabled{opacity:.4;cursor:not-allowed}
+.key.go{background:var(--primary);color:var(--primary-ink);border-color:var(--primary);padding:12px 26px;font-size:14px}
+.key.go:hover:not(:disabled){background:var(--primary);opacity:.88}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.well{font-size:12.5px;color:var(--ink)}
+.readout{display:grid;grid-template-columns:72px 1fr;gap:7px 12px;margin:0}
+.readout dt{color:var(--soft);font-family:Inter,Arial,sans-serif;font-size:12px;align-self:baseline}
+.readout dd{margin:0;overflow-wrap:anywhere}
+.match{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:13px;color:var(--soft)}
+.chip{color:var(--ok);font-weight:600;font-size:13px}
+.chip::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:.08em}
+.chip.none{color:var(--soft)} .chip.none::before{background:var(--off)}
+.hint{font-size:12.5px;color:var(--soft);margin:0;max-width:62ch}
+
+.segs{display:flex;flex-direction:column;gap:8px}
+.seg{display:grid;grid-template-columns:104px 1fr auto auto;gap:10px;align-items:center}
+.seg-file{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.seg-size{font-size:12px;color:var(--soft);white-space:nowrap}
+.x{background:none;border:0;color:var(--faint);font-size:18px;line-height:1;padding:4px 6px}
+.x:hover{color:var(--ink)}
+.drop{border:1px dashed var(--line-strong);border-radius:8px;padding:10px 10px 10px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-size:13px;color:var(--soft)}
+.drop.over{border-color:var(--ink);color:var(--ink)}
+
+.map{padding-block:6px 2px}
+.map-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;color:var(--soft);font-family:Inter,Arial,sans-serif;font-size:12px;margin-bottom:10px}
+.map-head b{color:var(--ink);font-weight:500;font-family:"JetBrains Mono",ui-monospace,monospace}
+.bar{position:relative;height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.extent{position:absolute;inset:0 auto 0 0;background:var(--accent-tint);box-shadow:inset -2px 0 0 var(--accent)}
+.fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent)}
+.ticks{display:flex;justify-content:space-between;color:var(--faint);font-size:10.5px;margin-top:8px}
+.opts{display:flex;flex-wrap:wrap;gap:8px 24px;font-size:13px}
+.opts label{display:flex;gap:8px;align-items:center}
+.opts input{accent-color:var(--ink);width:14px;height:14px}
+.write{display:flex;flex-wrap:wrap;gap:20px 40px;align-items:center;padding-top:8px}
+.stat{flex:1 1 320px;display:grid;grid-template-columns:repeat(4,auto);gap:4px 24px;justify-content:space-between}
+.stat span{color:var(--soft);font-family:Inter,Arial,sans-serif;font-size:12px;display:block}
+.stat b{font-family:Inter,Arial,sans-serif;font-weight:400;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.25}
+
+.tools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end}
+.tools .field{flex:0 0 130px}
+.tools .spacer{flex:1}
+.tools .opts{align-self:end!important;padding-bottom:9px}
+.log{height:260px;overflow:auto;padding:16px 18px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.log .t{color:var(--faint)}
+.log .sys{color:var(--c-sys)}
+.log .rom{color:var(--c-rom)}
+.log .good{color:var(--c-good)}
+.log .bad{color:var(--c-bad)}
+.log .tx{font-weight:600}
+.sendrow{display:flex;gap:10px}
+.sendrow input{flex:1}
+@media (max-width:820px){
+  body{padding-inline:16px}
+  .grid{grid-template-columns:1fr}
+  .seg{grid-template-columns:96px 1fr auto}
+  .seg-size{display:none}
+  .stat{grid-template-columns:repeat(2,auto)}
+}
+/* Three tiers: 1 Connection, 2 Image (the core, lifted on a surface), 3 Monitor */
+.bench{gap:20px}
+.top{padding-inline:28px;padding-bottom:8px}
+.tier{display:flex;flex-direction:column;gap:22px;padding:24px 28px 28px;border:1px solid var(--line);border-radius:14px}
+.tier.core{background:var(--surface);border-color:var(--line-strong);box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 32px -16px rgba(0,0,0,.18);padding-block:28px 32px}
+.tier.core select,.tier.core input.off,.tier.core .seg-file{background:var(--ground)}
+.tier-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.tier-h .n{width:22px;height:22px;border-radius:50%;border:1px solid var(--line-strong);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--soft);align-self:center}
+.tier.core .tier-h .n{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+.tier-h h2{margin:0;font-size:16px;font-weight:600;letter-spacing:-.01em}
+.tier.core .tier-h h2{font-size:18px}
+.tier-d{font-size:13px;color:var(--soft)}
+.tier-s{margin-left:auto;font-size:13px;color:var(--soft)}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:28px 56px;align-items:start}
+.module h3{margin:0;padding-bottom:8px;border-bottom:1px solid var(--line);font-size:12px;font-weight:500;color:var(--soft)}
+.boardgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px 36px;align-items:start}
+@media (max-width:820px){
+  .top{padding-inline:4px}
+  .tier{padding:20px 16px 22px}
+  .pair,.boardgrid{grid-template-columns:1fr}
+}
+/* Bold break headers: a solid band across the top of each of the three areas */
+:root{--band:#1a1c1e;--band-ink:#ffffff;--band-soft:#a4a9ae;--band-line:#3a3d41}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--band:#34373b;--band-ink:#f4f4f2;--band-soft:#a4a9ae;--band-line:#55595e}}
+:root[data-theme="dark"]{--band:#34373b;--band-ink:#f4f4f2;--band-soft:#a4a9ae;--band-line:#55595e}
+.bench{gap:32px}
+.tier,.tier.core{padding:0 0 28px;gap:24px;overflow:hidden;border-color:var(--line-strong)}
+.tier>*:not(.tier-h){margin-inline:28px}
+.tier-h{background:var(--band);color:var(--band-ink);padding:13px 28px;align-items:center;gap:6px 14px}
+.tier-h .n,.tier.core .tier-h .n{width:24px;height:24px;background:transparent;border:1.5px solid var(--band-line);color:var(--band-ink);font-size:12px}
+.tier.core .tier-h .n{background:var(--accent);border-color:var(--accent);color:#1a1c1e}
+.tier-h h2,.tier.core .tier-h h2{font-size:16px;font-weight:600;letter-spacing:.01em;color:var(--band-ink)}
+.tier-d{color:var(--band-soft)}
+.tier-s{color:var(--band-ink);font-weight:500}
+@media (max-width:820px){.tier-h{padding:12px 16px}.tier>*:not(.tier-h){margin-inline:16px}.tier,.tier.core{padding:0 0 22px}}
+/* Capitalised name and area titles */
+.brand h1{text-transform:uppercase;letter-spacing:.06em;font-size:20px}
+.tier-h h2,.tier.core .tier-h h2{text-transform:uppercase;letter-spacing:.08em;font-size:14px}
+/* Green rule under the page header; all three step numbers treated alike */
+.top{padding-bottom:16px;border-bottom:2px solid var(--accent)}
+.tier.core .tier-h .n{background:transparent;border-color:var(--band-line);color:var(--band-ink)}
+/* Green rule between the control areas (1, 2) and monitoring (3) */
+:root{--accent-2:#26c27a}
+.split{border:0;height:2px;background:var(--accent-2);margin:4px 0;width:100%}
+/* Error states (mock scenarios) */
+.alert{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;border:1px solid var(--fault);border-radius:10px;padding:12px 16px;background:color-mix(in srgb,var(--fault) 7%,transparent);font-size:13px}
+.alert b{color:var(--fault);font-weight:600}
+.alert span{flex:1 1 320px}
+.tier-s.bad{color:#ff8f85}
+.sim{font-size:12px;color:var(--soft);display:flex;gap:8px;align-items:center}
+.sim select{width:auto;padding:4px 8px;font-family:Inter,Arial,sans-serif;font-size:12px}
+@media (min-width:821px){.top{flex-wrap:nowrap}.brand{flex:1 1 auto;min-width:0}.leds{flex:0 0 auto}.sim{margin-left:auto;margin-right:24px}}
+/* Connect = go (green). Disconnect = stop (red outline, fills on hover). */
+.key.connect{background:var(--accent);border-color:var(--accent-2);color:#10261b;font-weight:600}
+.key.connect:hover:not(:disabled){background:var(--accent);filter:brightness(1.06)}
+.key.stop{background:transparent;border-color:var(--fault);color:var(--fault)}
+.key.stop:hover:not(:disabled){background:var(--fault);color:#fff}
+/* Theme: Auto follows the system; Light / Dark pin it. color-scheme makes native selects and checkboxes follow too. */
+:root{color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark}}
+:root[data-theme="dark"]{color-scheme:dark}
+.theme{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;margin-left:24px}
+.theme button{background:transparent;border:0;color:var(--soft);font-size:12px;font-weight:500;padding:5px 11px}
+.theme button+button{border-left:1px solid var(--line-strong)}
+.theme button:hover{color:var(--ink)}
+.theme button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+@media (max-width:820px){.theme{margin-left:0}}
+/* Header status: dot + colour. Green = good, orange = needs you (pulsing = working), grey = idle, red = error only. */
+.tier-s{display:inline-flex;align-items:center;gap:8px}
+.tier-s::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.tier-s.ok{color:var(--accent)}
+.tier-s.warn,.tier-s.busy{color:#ff9f43}
+@media (prefers-reduced-motion:no-preference){.tier-s.busy::before{animation:bl 1s ease-in-out infinite}}
+.tier-s.idle{color:var(--band-soft);font-weight:400}
+.tier-s.idle::before{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor}
+.tier-s.bad{color:#ff8f85}
+/* FLASH | MONITOR views */
+.views{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:-12px}
+.views button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:14px 20px;border-radius:14px;border:1px solid var(--line-strong);background:transparent;color:var(--soft);transition:background .15s,color .15s}
+.views button b{font-size:15px;font-weight:600;letter-spacing:.08em;color:var(--ink)}
+.views button span{font-size:12.5px}
+.views button:hover{background:var(--surface)}
+.views button[aria-pressed="true"]{background:var(--band);border-color:var(--band);color:var(--band-soft)}
+.views button[aria-pressed="true"] b{color:var(--band-ink)}
+body[data-view="monitor"] #tier2,body[data-view="monitor"] .split,body[data-view="monitor"] #boardMod,body[data-view="monitor"] #baudField,body[data-view="monitor"] #baudHint{display:none}
+body[data-view="monitor"] .pair{grid-template-columns:1fr}
+body[data-view="monitor"] .log{height:min(62vh,640px)}
+#btnRead{align-self:flex-start}
+@media (max-width:560px){.views{grid-template-columns:1fr}}
+/* Board health notice */
+.health{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;border:1px solid var(--line-strong);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--soft)}
+.health b{font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:8px}
+.health b::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--off)}
+.health span{flex:1 1 320px}
+.health.ok{border-color:var(--ok)} .health.ok b::before{background:var(--ok)}
+.health.warn{border-color:#ff9f43} .health.warn b::before{background:#ff9f43}
+.health.bad{border-color:var(--fault);background:color-mix(in srgb,var(--fault) 7%,transparent)} .health.bad b{color:var(--fault)} .health.bad b::before{background:var(--fault)}
+/* footer + links */
+a{color:inherit;text-decoration-color:var(--line-strong);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--ink)}
+.foot{border-top:1px solid var(--line);padding:20px 28px 0;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--soft)}
+.foot p{margin:0;max-width:80ch} .foot b{color:var(--ink);font-weight:600}
+@media (max-width:820px){.foot{padding-inline:4px}}
+</style>
+</head>
+<body>
+
+<div class="bench">
+  <header class="top">
+    <div class="brand">
+      <h1>ESP Ctrl</h1>
+      <span class="by">Flash and monitor ESP boards · by WOODWERD</span>
+      <span class="mocktag">v0.9.0</span>
+      <a class="mocktag guide" href="guide.html">User guide</a>
+    </div>
+    <div class="leds" aria-live="polite">
+      <span class="led" id="ledLink"><i></i>Link</span>
+      <span class="led" id="ledSync"><i></i>Sync</span>
+      <span class="led" id="ledBusy"><i></i>Write</span>
+      <span class="theme" role="group" aria-label="Colour theme">
+        <button type="button" data-theme-set="auto" aria-pressed="true">Auto</button><button type="button" data-theme-set="light" aria-pressed="false">Light</button><button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+      </span>
+    </div>
+  </header>
+
+  <nav class="views" aria-label="What do you want to do?">
+    <button type="button" data-view-set="flash" aria-pressed="true"><b>FLASH</b><span>Write firmware to a board</span></button>
+    <button type="button" data-view-set="monitor" aria-pressed="false"><b>MONITOR</b><span>Watch a running board without interrupting it</span></button>
+  </nav>
+
+  <section class="tier" id="tier1" aria-labelledby="t1">
+    <div class="tier-h"><span class="n">1</span><h2 id="t1">Connection</h2><span class="tier-d" id="t1Desc">Open the port and listen</span><span class="tier-s" id="t1State"></span></div>
+    <div class="alert" id="alertt1" role="alert" hidden></div>
+    <div class="health" id="health" role="status" hidden></div>
+    <div class="pair">
+      <div class="module">
+        <h3>Port</h3>
+        <div class="well readout mono"><dt>Device</dt><dd id="portName">—</dd><dt>Bridge</dt><dd id="portBridge">—</dd></div>
+        <div class="row">
+          <label class="field" id="baudField"><span>Flash baud</span>
+            <select id="baud"><option value="auto" selected>Auto</option><option>115200</option><option>230400</option><option>460800</option><option>921600</option></select>
+          </label>
+          <button class="key" id="btnConnect">Connect</button>
+        </div>
+        <div class="opts"><label><input type="checkbox" id="optAuto" checked> Connect automatically when a known board is plugged in</label></div>
+        <p class="hint" id="baudHint"></p>
+      </div>
+      <div class="module" id="boardMod">
+        <h3>Board</h3>
+        <div class="boardgrid">
+          <dl class="well readout mono" id="boardRead">
+            <dt>Chip</dt><dd id="bChip">—</dd>
+            <dt>Cores</dt><dd id="bFeat">—</dd>
+            <dt>Crystal</dt><dd id="bXtal">—</dd>
+            <dt>Flash</dt><dd id="bFlash">—</dd>
+            <dt>MAC</dt><dd id="bMac">—</dd>
+          </dl>
+          <div class="module">
+            <div class="match"><span class="chip none" id="matchChip">No board</span><span id="matchText">Connect to read the chip.</span></div>
+            <button class="key" id="btnRead" type="button" hidden>Read board</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tier core" id="tier2" aria-labelledby="t2">
+    <div class="tier-h"><span class="n">2</span><h2 id="t2">Image</h2><span class="tier-d">Choose what to write, and where</span><span class="tier-s" id="t2State"></span></div>
+    <div class="alert" id="alertt2" role="alert" hidden></div>
+    <div class="module">
+      <div class="segs" id="segs"></div>
+      <div class="drop" id="drop">
+        <span id="dropText">Drop a firmware .bin here, or</span>
+        <span class="row"><button class="key" id="btnAdd">Choose file</button>
+        <input type="file" id="file" accept=".bin" multiple hidden></span>
+      </div>
+      <div class="well map mono">
+        <div class="map-head"><span>Flash map · <b id="mapSize">—</b></span><span>Image <b id="mapRange">—</b></span></div>
+        <div class="bar"><div class="extent" id="extent"></div><div class="fill" id="fill"></div></div>
+        <div class="ticks" id="ticks"></div>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="optErase"> Erase entire flash first</label>
+        <label><input type="checkbox" id="optVerify" checked> Verify after write</label>
+        <label><input type="checkbox" id="optReset" checked> Reset and open monitor when done</label>
+      </div>
+      <div class="write">
+        <button class="key go" id="btnWrite" disabled>Write flash</button>
+        <div class="well stat mono">
+          <div><span>Stage</span><b id="sStage">Idle</b></div>
+          <div><span>Done</span><b id="sPct">0 %</b></div>
+          <div><span>Rate</span><b id="sRate">—</b></div>
+          <div><span>Elapsed</span><b id="sTime">0.0 s</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="split" aria-hidden="true">
+
+  <section class="tier" id="tier3" aria-labelledby="t3">
+    <div class="tier-h"><span class="n" id="t3Num">3</span><h2 id="t3">Monitor</h2><span class="tier-d">Watch the board's serial output</span><span class="tier-s" id="t3State"></span></div>
+    <div class="module">
+      <div class="tools">
+        <label class="field"><span>Monitor baud</span><select id="monBaud"><option>9600</option><option>74880</option><option selected>115200</option><option>921600</option></select></label>
+        <label class="opts"><span style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="optTs" checked> Timestamps</span></label>
+        <label class="opts"><span style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="optScroll" checked> Follow output</span></label>
+        <span class="spacer"></span>
+        <button class="key" id="btnReset" disabled>Reset board</button>
+        <button class="key" id="btnClear">Clear</button>
+      </div>
+      <div class="well log mono" id="log" tabindex="0" aria-label="Serial output"></div>
+      <div class="sendrow"><input class="send" id="send" placeholder="Send a line to the board" disabled><button class="key" id="btnSend" disabled>Send</button></div>
+    </div>
+  </section>
+  <footer class="foot">
+    <p><b>ESP Ctrl v0.9.0</b> · <a href="guide.html">User guide</a> · <a href="https://github.com/WOODWERD/esp-ctrl">Source and issues on GitHub</a> · MIT licence · by WOODWERD LLC</p>
+    <p>Runs entirely in your browser. It makes no network requests, and your firmware never leaves this computer.</p>
+    <p>An independent project, not affiliated with or endorsed by Espressif Systems. ESP32 and related names are trademarks of Espressif Systems.</p>
+  </footer>
+</div>
+
+<script type="module" src="app.js?v=0.9.0"></script>
+</body>
+</html>
