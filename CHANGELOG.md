@@ -2,6 +2,7 @@
 
 ## Site — 2026-11-01
 
+- The lead screenshot no longer shows the old toolkit strip, and the README states the current version.
 - The toolkit strip now reads WOODWERD Toolkit, Tools for everyday makers, and All tools lists Cable Ctrl under Print.
 - All tools now lists File Ctrl under Print.
 

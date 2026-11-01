@@ -44,8 +44,8 @@ There is no build step for the app itself: `app.js` is plain, readable JavaScrip
 
 ## Status and feedback
 
-v0.9 is a public beta. So far it has been tested on Cheap Yellow Display (ESP32 + CH340) boards with Chrome on macOS. Reports
-from other boards, USB bridges, Windows and Linux are exactly what it needs before 1.0: please
+ESP Ctrl is at v1.0.0. So far it has been tested on Cheap Yellow Display (ESP32 + CH340) boards with Chrome on macOS. Reports
+from other boards, USB bridges, Windows and Linux are exactly what it needs next: please
 [open an issue](https://github.com/WOODWERD/esp-ctrl/issues) and say which board, which USB bridge (shown
 in the Port panel) and which browser.
 
