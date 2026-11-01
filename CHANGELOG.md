@@ -1,5 +1,9 @@
 # Changelog
 
+## Site — 2026-11-01
+
+- The toolkit strip now reads WOODWERD Toolkit, Tools for everyday makers, and All tools lists Cable Ctrl under Print.
+
 ## 1.0.0 — WOODWERD Digital
 
 First stable release. The interface is rebuilt on the WOODWERD Digital design system; nothing about
