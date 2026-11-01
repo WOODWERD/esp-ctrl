@@ -2,6 +2,7 @@
 
 ## Site — 2026-11-01
 
+- All tools now shows CtrlClock as in progress and Ctrl Case for the 2.8" board.
 - A GitHub button beside All tools and in the footer links to the WOODWERD page on GitHub.
 - The lead screenshot no longer shows the old toolkit strip, and the README states the current version.
 - The toolkit strip now reads WOODWERD Toolkit, Tools for everyday makers, and All tools lists Cable Ctrl under Print.
