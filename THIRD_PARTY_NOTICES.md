@@ -10,3 +10,5 @@ ESP Ctrl itself is © 2026 WOODWERD LLC, MIT-licensed (see `LICENSE`). It distri
 | [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) 400/500 | SIL Open Font License 1.1 | `site/fonts/`, licence alongside |
 
 `site/vendor/esptool.js` is rebuilt with `cd build && npm install && npm run vendor`.
+
+The WOODWERD / DESIGN mark and the WW button are marks of WOODWERD LLC. The MIT licence on this code doesn't grant rights to use them.
