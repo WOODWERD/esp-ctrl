@@ -53,6 +53,7 @@ td:first-child{font-weight:500;white-space:nowrap}
 .note{border-left:3px solid var(--accent);padding:2px 0 2px 14px;color:var(--soft);max-width:68ch}
 footer{grid-column:1/-1;border-top:1px solid var(--line);padding-top:18px;font-size:12.5px;color:var(--soft)}
 footer p{margin:0 0 5px;max-width:80ch}
+@media (min-width:821px){nav[aria-label="Contents"] a{padding-left:8px}nav[aria-label="Contents"] a[aria-current="location"]{box-shadow:inset 2px 0 0 var(--accent);color:var(--ink);font-weight:500}}
 @media (max-width:820px){body{padding-inline:16px}.page{grid-template-columns:1fr;gap:28px}nav{position:static;flex-direction:row;flex-wrap:wrap;gap:6px 14px}nav b{width:100%;margin-top:4px}td:first-child{white-space:normal}}
 
 /* WOODWERD Digital: toolkit strip, maker's mark, root-phi headings */
@@ -416,6 +417,17 @@ if (millis() - last >= 5000) {
 (function(){var k=document.getElementById("toolkit");if(!k)return;
 document.addEventListener("click",function(e){if(k.open&&!k.contains(e.target))k.open=false});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&k.open)k.open=false});})();
+/* Guide menu: mark the section you're reading (WOODWERD Digital, Guide menu). */
+(function(){var n=document.querySelector('nav[aria-label="Contents"]');if(!n)return;
+var pairs=[].slice.call(n.querySelectorAll('a[href^="#"]')).map(function(a){return[a,document.getElementById(a.hash.slice(1))]}).filter(function(p){return p[1]}),held=false,tick=0;
+if(!pairs.length)return;
+function mark(a){pairs.forEach(function(p){if(p[0]===a)p[0].setAttribute("aria-current","location");else p[0].removeAttribute("aria-current")})}
+function follow(){if(held)return;var cur=pairs[0][0],end=innerHeight+scrollY>=document.documentElement.scrollHeight-2;
+pairs.forEach(function(p){if(p[1].getBoundingClientRect().top<=innerHeight/3)cur=p[0]});mark(end?pairs[pairs.length-1][0]:cur)}
+pairs.forEach(function(p){p[0].addEventListener("click",function(){mark(p[0]);held=true})});
+["wheel","touchstart","keydown"].forEach(function(t){addEventListener(t,function(){held=false},{passive:true})});
+addEventListener("scroll",function(){if(!tick)tick=requestAnimationFrame(function(){tick=0;follow()})},{passive:true});
+addEventListener("load",follow);follow();})();
 </script>
 </body>
 </html>

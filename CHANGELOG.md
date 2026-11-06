@@ -1,5 +1,9 @@
 # Changelog
 
+## Site — 2026-11-06
+
+- The guide's menu marks the section you're reading with an amber bar.
+
 ## Site — 2026-11-01
 
 - All tools now lists Box Ctrl under Print.
